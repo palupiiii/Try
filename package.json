@@ -4,9 +4,10 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "tsx src/index.ts",
-    "build": "tsc",
-    "dev": "tsx watch src/index.ts"
+    "start": "node dist/index.js",
+    "build": "tsc && prisma generate",
+    "dev": "tsx watch src/index.ts",
+    "vercel-build": "prisma generate && tsc"
   },
   "keywords": [],
   "author": "",
