@@ -5,8 +5,34 @@ import express from 'express';
 const app = express();
 const prisma = new PrismaClient();
 
+// Error handling middleware
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error(err.stack);
+    res.status(500).json({ error: 'Something went wrong!' });
+});
+
+// Process handling
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
+});
+
+process.on('unhandledRejection', (error) => {
+    console.error('Unhandled Rejection:', error);
+});
+
+// Cleanup on exit
+process.on('SIGTERM', async () => {
+    await prisma.$disconnect();
+    process.exit(0);
+});
+
 app.use(cors());
 app.use(express.json());
+
+// Health check endpoint
+app.get("/health", (req, res) => {
+    res.status(200).json({ status: "ok" });
+});
 
 app.post("/books", async (req, res) => {
     const {title, author, published} = req.body;
@@ -108,7 +134,14 @@ app.post("/books", async (req, res) => {
         }
     });
     
-    app.listen(3000, () => {
-        console.log('Server is running on port 3000');
-    });
+    const PORT = process.env.PORT || 3000;
+    try {
+        app.listen(PORT, () => {
+            console.log(`Server is running on port ${PORT}`);
+        });
+    } catch (error) {
+        console.error('Failed to start server:', error);
+        await prisma.$disconnect();
+        process.exit(1);
+    }
 
